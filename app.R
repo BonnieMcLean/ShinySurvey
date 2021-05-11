@@ -23,8 +23,8 @@ library(googledrive)
 
 options(gargle_oauth_cache = ".secrets")
 
-# Authenticate in interactive mode (run the app) ONCE and check if the token 
-# has been stored inside the .secrets folder, after that just comment out this line
+# The line below (drive_auth()) is used to authenticate your google account. Uncomment it and run the app ONCE, then check if the token 
+# has been stored inside the .secrets folder, after that just comment out the line again (or it will ask you to sign in every time you run the app)
 
 # drive_auth() # Authenticate to produce the token in the cache folder
 
@@ -36,17 +36,21 @@ gs4_auth(token = drive_token())
 
 ## 2. Make google sheet
 
-# You only need to make the google sheet once, so uncomment this line to do that, then comment it out again
+# You only need to make the google sheet once, so uncomment the line below and run it in your console to make the google sheet, then comment it out again
 
 # ss <- gs4_create("SurveyData")
 
-# Get the sheet ID
+# Run the code below in your console to get the sheet ID
 
 # ss[1]
 
-# Copy and paste the sheet_ID, storing it in a variable (replace the XXXXXXs here with your sheet ID)
+# Copy and paste the sheet ID from the console, storing it in the variable sheet_ID (replace the XXXXXXs here with your sheet ID)
 
 sheet_ID <- "XXXXXXXXXXXXXXXXXXXXX"
+
+# Congratulations, now this shiny app will be able to write to your google sheet!
+
+### CODE FOR THE APP ITSELF
 
 # Read in the stimuli
 
@@ -63,13 +67,11 @@ names(images) <- stimuli$Image
 
 # sheet_append(data.frame(t((data.frame(c(names(images),'Country'))))),ss=sheet_ID)
 
-### MAKING THE APP
-
-# make a list of labels for food items
-labels <- c("cake","tart","pie","biscuit","pastry","bun","bread")
-
-# create a vector of the names of the images in a random order 
+# create a vector of the names of the images in a random order -- this is used to randomise the order of the presentation of stimuli between participants
 image_order <- sample(names(images))
+
+# make a list of labels for your stimuli (these will be the options that people choose to describe them)
+labels <- c("cake","tart","pie","biscuit","pastry","bun","bread")
 
 # create the user interface
 ui <- fluidPage(
@@ -77,8 +79,7 @@ ui <- fluidPage(
     useShinyjs(),
     mainPanel(
         titlePanel("Baked goods survey"),
-        # enclose stuff you want to treat as one element 
-        # to hide and show at different points in the experiment in a div()
+        # enclose stuff you want to treat as one element to hide and show at different points in the experiment in a div()
         div(id="instructions",
             includeHTML('instructions.html'),
             actionButton("Participate","Participate")),
