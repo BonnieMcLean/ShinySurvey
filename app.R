@@ -52,15 +52,45 @@ sheet_ID <- "XXXXXXXXXXXXXXXXXXXXX"
 
 ### CODE FOR THE APP ITSELF
 
-# Read in the stimuli
-
-stimuli <- read.csv('stimuli.csv',encoding="UTF-8")
-
 # Make a vector to store the image links
-images <- stimuli$Link
+images <-  c(
+  "https://www.brides.com/thmb/jfyHBWikMeTVowZL68mp3vW1lEA=/1197x1388/filters:fill(auto,1)/aef-a1eb0550df2645e581844a61585422ac.png",
+  "https://cdn.valio.fi/mediafiles/48ec6532-3015-4a25-a0dc-c1f8078decf0/1600x1200-recipe-data/4x3/fodelsedagstarta-med-hallon-och-blabar.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Raspberry_tart.jpg/1200px-Raspberry_tart.jpg",
+  "https://tmbidigitalassetsazure.blob.core.windows.net/rms3-prod/attachments/37/1200x1200/exps6086_HB133235C07_19_4b_WEB.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/f/fa/Freshly_baked_gingerbread_-_Christmas_2004.jpg",
+  "https://files.allas.se/uploads/sites/25/2020/04/citronkaka-med-glasyr-2-700x920-1280.jpg",
+  "https://s3.amazonaws.com/finecooking.s3.tauntonclud.com/app/uploads/2017/04/18182727/051054w-Dodge-Lemon-Tart-main.jpg",
+  "https://imageresizer.static9.net.au/tPvl31oEOzRCSBjPofR2I8J-Od8=/1200x675/https%3A%2F%2Fprod.static9.net.au%2F_%2Fmedia%2Fnetwork%2Fimages%2F2019%2F01%2F06%2F11%2F43%2Fbiscuits.jpg",
+  "https://d2rfo6yapuixuu.cloudfront.net/h65/h7c/8857136431134/07310960016403.jpg_master_axfood_400",
+  "https://upload.wikimedia.org/wikipedia/commons/2/2b/SemlaFlickr.jpg",
+  "https://www.thespruceeats.com/thmb/LztCwx-RV2XEcA9MuOG5Oqf7D44=/1606x1070/filters:fill(auto,1)/quick-cinnamon-rolls-3053776-81543bd7548c4b7fa95b8c51aaec316d.jpg",
+  "https://cookinglsl.com/wp-content/uploads/2016/10/apple-pull-apart-bread-2-1.jpg",
+  "https://tmbidigitalassetsazure.blob.core.windows.net/rms3-prod/attachments/37/1200x1200/exps9018_FB153741B05_27_4b.jpg",
+  "https://images.immediate.co.uk/production/volatile/sites/30/2020/08/brioche-597b5f8.jpg",
+  "https://files.allas.se/uploads/sites/31/2014/10/langpanna.jpg"
+)
 
 # Name the links so you know what image they refer to
-names(images) <- stimuli$Image
+names(images) <- c(
+  "Wedding cake",
+  "Birthday cake",
+  "Raspberry tart",
+  "Apple pie",
+  "Gingerbread biscuits",
+  "Lemon cake",
+  "Lemon tart",
+  "Oreos",
+  "Wienerbröd",
+  "Semla",
+  "Cinammon scroll",
+  "Apple pullapart",
+  "Round pullapart",
+  "Brioche",
+  "Raspberry slice"
+)
+
+# I have hardcoded the links and images into the app, because that makes it load quicker than if you (e.g.) had this information in a csv file and read it from the csv file, but you can also do that if you have a lot of stimuli. Just try to make your csv file have as few columns as possible.
 
 # Make the first row in the google sheet these names (plus an extra column for the person's country). 
 # You only need to uncomment this and do this once.
@@ -106,18 +136,22 @@ server <- function(input,output,session){
     useShinyjs()
 
     # This is what the server does when the user clicks participate
-    observeEvent(input$Participate, {
+    onclick("Participate", {
         show("experiment")
         hide("instructions")
         # show the first image in image_order. Images contains the actual links to the images
         # and we use the name of the image (in image-order) as the key to access the image link
-        # stored under that name in images
-        output$Stimulus <- renderUI(tags$img(src=images[image_order[1]][[1]][1],height=150,width=150))
+        # stored under that name in images. We need to use [[1]] instead of [1] at the end because using [1] will
+        # return the name of the image as well as its link, but we only want the link
+        output$Stimulus <- renderUI(tags$img(src=images[image_order[1]][[1]],height=150,width=150))
     })
     
     # make a variable to store the users choices of labels for the different images
     # we start with a vector of the right length full of numbers, and replace the numbers
     # with the users choices of labels as the experiment proceeds
+    # we do this rather than using an empty vector, because we want to store their answers in the location
+    # in the vector that matches the location of the column in the google sheet (since the images are presented in a 
+    # random order that won't match their order in the google sheet)
     results <- c(1:length(images))
     
     # make a variable to count how many images you've shown, it starts at 1 because the first
@@ -146,7 +180,7 @@ server <- function(input,output,session){
         # if you haven't shown all the images yet
         if(count<=length(images)){
             # show the next image
-            output$Stimulus <- renderUI(tags$img(src=images[image_order[count]][[1]][1],height=150,width=150))}
+            output$Stimulus <- renderUI(tags$img(src=images[image_order[count]][[1]],height=150,width=150))}
         else{
             # otherwise end the experiment and show the finished panel
             hide("experiment")
@@ -158,19 +192,21 @@ server <- function(input,output,session){
     observeEvent(input$Submit, {
         # add their text input for the Country to their results, and save this as answer
         answer <- c(results,input$Country)
-        # write this as a new row in the google sheet
-        sheet_append(data.frame(t((data.frame(answer)))),ss=sheet_ID)
+        # write this as a new row in the google sheet. Annoyingly, sheet_append only accepts a dataframe as input, so you have to convert the transposed vector 
+        # (otherwise it will put the answers as one column instead of one row) to a dataframe
+        sheet_append(as.data.frame(t(answer)),ss=sheet_ID)
         show("submitted")
         hide("finished")
     })
     
     # function for when a user enters something into the 'Other' field
     observeEvent(input$Other, {
-        if(!is.null(input$Other) && input$Other != "")
+        if(input$Other != ""){
             # update the radio buttons to include their new 'other' category and select the radio
             # button for that category
             updateRadioButtons(session, "Choice", choices = c(labels, input$Other), 
-                               selected = input$Other)})
+                               selected = input$Other)}
+    })
     
 
  }
