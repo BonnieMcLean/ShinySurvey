@@ -190,8 +190,8 @@ server <- function(input,output,session){
     
     # when the user presses submit
     observeEvent(input$Submit, {
-        # add their text input for the Country to their results, and save this as answer
-        answer <- c(results,input$Country)
+        # add their text input for Country to their results, as well as a record of the time of submission (to identify unique submissions)
+        answer <- c(results,input$Country,format(Sys.time(), "%a %b %d %X %Y"))
         # write this as a new row in the google sheet. Annoyingly, sheet_append only accepts a dataframe as input, so you have to convert the transposed vector 
         # (otherwise it will put the answers as one column instead of one row) to a dataframe
         sheet_append(as.data.frame(t(answer)),ss=sheet_ID)
